@@ -52,11 +52,12 @@ Limitations
 
 References
 ----------
-* [Charles Web Debugging Proxy](http://www.charlesproxy.com/)
-* [Hamms](https://github.com/kevinburke/hamms)
-* [httpbin](http://httpbin.org/)
-* [pathod](http://pathod.net/)
-* [Vaurien](http://vaurien.readthedocs.org/) - Chaos TCP Proxy
+* [Charles Web Debugging Proxy](http://www.charlesproxy.com/) - allows interactive modification of HTTP requests and responses
+* [Chaos Monkey](https://github.com/Netflix/SimianArmy) - inspiration for Chaos HTTP Proxy
+* [Hamms](https://github.com/kevinburke/hamms) - designed to elicit failures in your HTTP Client, similar to httpbin
+* [httpbin](http://httpbin.org/) - HTTP Request & Response Service which can deterministically exercise HTTP functionality
+* [pathod](http://pathod.net/docs/pathod) - programmable HTTP server
+* [Vaurien](https://github.com/mozilla-services/vaurien) - Chaos TCP Proxy
 
 License
 -------
