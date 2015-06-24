@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
+import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.Uninterruptibles;
 
@@ -58,7 +61,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
     private final HttpClient client;
     // TODO: AtomicReference?
     private Supplier<Failure> supplier;
-    private final Map<String, String> redirects = new ConcurrentHashMap<>();
+    private final Map<URI, URI> redirects = new ConcurrentHashMap<>();
 
     ChaosHttpProxyHandler(HttpClient client, Supplier<Failure> supplier) {
         this.client = requireNonNull(client);
@@ -82,17 +85,26 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
         logger.debug("Failure: {}", failure);
         try (InputStream is = request.getInputStream();
              OutputStream os = servletResponse.getOutputStream()) {
-            StringBuilder uri = new StringBuilder("http://")
-                    .append(request.getHeader(HttpHeaders.HOST))
-                    .append(request.getRequestURI());
+            HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
+                    HttpHeaders.HOST));
             String queryString = request.getQueryString();
-            if (queryString != null) {
-                uri.append("?" + queryString);
+            URI uri;
+            try {
+                uri = new URI(request.getScheme(),
+                        /*userInfo=*/ null,
+                        hostAndPort.getHostText(),
+                        hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
+                        request.getRequestURI(),
+                        queryString,
+                        /*fragment=*/ null);
+            } catch (URISyntaxException use) {
+                throw new IOException(use);
             }
-            String redirectedUri = redirects.get(uri.toString());
+            logger.debug("uri: {}", uri);
+            URI redirectedUri = redirects.get(uri);
             if (redirectedUri != null) {
                 // TODO: parameters
-                uri = new StringBuilder(redirectedUri);
+                uri = redirectedUri;
                 logger.debug("redirected uri: {}", uri);
             }
 
@@ -103,14 +115,21 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             case HTTP_307:
             case HTTP_308:
                 servletResponse.setStatus(failure.getResponseCode());
-                String oldUri = "http://" +
-                        request.getHeader(HttpHeaders.HOST) +
-                        request.getRequestURI();
-                String newUri = "http://" +
-                        request.getHeader(HttpHeaders.HOST) +
-                        "/" + UUID.randomUUID().toString();
-                redirects.put(newUri, oldUri);
-                servletResponse.addHeader(HttpHeaders.LOCATION, newUri);
+                URI redirectUri;
+                try {
+                    redirectUri = new URI(request.getScheme(),
+                            /*userInfo=*/ null,
+                            hostAndPort.getHostText(),
+                            hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
+                            "/" + UUID.randomUUID().toString(),
+                            /*query=*/ null,
+                            /*fragment=*/ null);
+                } catch (URISyntaxException use) {
+                    throw new IOException(use);
+                }
+                redirects.put(redirectUri, uri);
+                servletResponse.addHeader(HttpHeaders.LOCATION,
+                        redirectUri.toString());
                 return;
             case HTTP_408:
             case HTTP_500:
