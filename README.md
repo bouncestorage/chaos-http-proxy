@@ -43,6 +43,20 @@ Windows users must explicitly invoke java:
 java -jar chaos-http-proxy --properties chaos-http-proxy.conf
 ```
 
+Configuring Failure Rates
+-------------------------
+
+The configuration file determines all possible results for an HTTP request.
+Entries take the form `[response_type]=[n]`, where `[n]` is an integral value
+that determines the relative occurrence likelihood of each response type.
+For example, the following configuration gives a 1% chance of responses
+failing with a `500 Internal Error` response:
+
+```
+com.bouncestorage.chaoshttpproxy.http_500=1
+com.bouncestorage.chaoshttpproxy.success=99
+```
+
 [Sample configuration](https://github.com/bouncestorage/chaos-http-proxy/blob/master/src/main/resources/chaos-http-proxy.conf)
 
 Limitations
