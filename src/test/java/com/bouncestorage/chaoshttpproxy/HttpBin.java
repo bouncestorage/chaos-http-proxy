@@ -32,9 +32,13 @@ final class HttpBin {
     private final Server server;
     private final HttpBinHandler handler;
 
-    public HttpBin(URI endpoint)
-            throws Exception {
+    public HttpBin(URI endpoint) throws Exception {
+        this(endpoint, new HttpBinHandler());
+    }
+
+    public HttpBin(URI endpoint, HttpBinHandler handler) throws Exception {
         requireNonNull(endpoint);
+        this.handler = handler;
 
         server = new Server();
         HttpConnectionFactory httpConnectionFactory =
@@ -44,7 +48,6 @@ final class HttpBin {
         connector.setHost(endpoint.getHost());
         connector.setPort(endpoint.getPort());
         server.addConnector(connector);
-        this.handler = new HttpBinHandler();
         server.setHandler(handler);
     }
 
