@@ -119,7 +119,12 @@ public final class Main {
                         return failures.get(random.nextInt(failures.size()));
                     }
                 });
-        proxy.start();
+        try {
+            proxy.start();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
     }
 
     private static void usage(CmdLineParser parser) {
