@@ -16,6 +16,7 @@ Chaos HTTP Proxy can trigger many different failures:
 * client timeout, HTTP 408
 * redirects (temporary and permanent)
 * reorder response headers
+* server connection break, i.e., short read and write
 * server errors: HTTP 500, 503, and 504
 * server timeout
 

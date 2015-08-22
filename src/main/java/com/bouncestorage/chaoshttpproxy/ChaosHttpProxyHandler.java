@@ -135,6 +135,9 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
 
             InputStreamResponseListener listener =
                     new InputStreamResponseListener();
+            InputStream iss = failure == Failure.PARTIAL_REQUEST ?
+                    // TODO: random limit
+                    ByteStreams.limit(is, 1024) : is;
             org.eclipse.jetty.client.api.Request clientRequest = client
                     .newRequest(uri.toString())
                     .method(request.getMethod());
@@ -168,6 +171,9 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     }
                 });
             clientRequest.send(listener);
+            if (failure == Failure.PARTIAL_REQUEST) {
+                return;
+            }
 
             Response response;
             try {
@@ -206,7 +212,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             }
             try (InputStream responseContent = listener.getInputStream()) {
                 switch (failure) {
-                case PARTIAL_DATA:
+                case PARTIAL_RESPONSE:
                     byte[] array = new byte[1024];
                     int count = responseContent.read(array);
                     if (count != -1) {

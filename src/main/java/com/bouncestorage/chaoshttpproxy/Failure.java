@@ -42,8 +42,10 @@ enum Failure {
     CORRUPT_REQUEST_CONTENT_MD5,
     /** Corrupt Content-MD5 header in response. */
     CORRUPT_RESPONSE_CONTENT_MD5,
-    /** Return partially correct data then close socket. */
-    PARTIAL_DATA,
+    /** Read partial request then close socket. */
+    PARTIAL_REQUEST,
+    /** Write partial response then close socket. */
+    PARTIAL_RESPONSE,
     /** Reorder HTTP response headers. */
     REORDER_HEADERS,
     /** Return first 10 bytes slowly, then return all bytes at full speed. */

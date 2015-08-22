@@ -167,8 +167,32 @@ public final class ChaosHttpProxyTest {
     }
 
     @Test
+    public void testHttpPostPartialData() throws Exception {
+        int contentLength = 65536 + 1;
+        proxy.setFailureSupplier(Suppliers.ofInstance(
+                Failure.PARTIAL_REQUEST));
+        ContentResponse response = client.POST(httpBinEndpoint + "/post")
+                .content(new BytesContentProvider(new byte[contentLength]))
+                .send();
+        assertThat(response.getContent().length).isNotEqualTo(contentLength);
+    }
+
+    @Test
+    public void testHttpPutPartialData() throws Exception {
+        int contentLength = 65536 + 1;
+        proxy.setFailureSupplier(Suppliers.ofInstance(
+                Failure.PARTIAL_REQUEST));
+        ContentResponse response = client.newRequest(httpBinEndpoint + "/put")
+                .method("PUT")
+                .content(new BytesContentProvider(new byte[contentLength]))
+                .send();
+        assertThat(response.getContent().length).isNotEqualTo(contentLength);
+    }
+
+    @Test
     public void testHttpGetPartialData() throws Exception {
-        proxy.setFailureSupplier(Suppliers.ofInstance(Failure.PARTIAL_DATA));
+        proxy.setFailureSupplier(Suppliers.ofInstance(
+                Failure.PARTIAL_RESPONSE));
         thrown.expect(ExecutionException.class);
         thrown.expectCause(CoreMatchers.isA(EOFException.class));
         client.GET(httpBinEndpoint + "/get");
