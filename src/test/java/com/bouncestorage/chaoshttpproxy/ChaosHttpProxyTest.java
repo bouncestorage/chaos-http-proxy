@@ -21,11 +21,16 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -37,6 +42,8 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -74,7 +81,17 @@ public final class ChaosHttpProxyTest {
                 proxyEndpoint.getQuery(), proxyEndpoint.getFragment());
         logger.debug("ChaosHttpProxy listening on {}", proxyEndpoint);
 
-        httpBin = new HttpBin(httpBinEndpoint);
+        setupHttpBin(new HttpBin(httpBinEndpoint));
+
+        client = new HttpClient();
+        ProxyConfiguration proxyConfig = client.getProxyConfiguration();
+        proxyConfig.getProxies().add(new HttpProxy(proxyEndpoint.getHost(),
+                proxyEndpoint.getPort()));
+        client.start();
+    }
+
+    private void setupHttpBin(final HttpBin httpBin) throws Exception {
+        this.httpBin = httpBin;
         httpBin.start();
 
         // reset endpoint to handle zero port
@@ -83,12 +100,6 @@ public final class ChaosHttpProxyTest {
                 httpBin.getPort(), httpBinEndpoint.getPath(),
                 httpBinEndpoint.getQuery(), httpBinEndpoint.getFragment());
         logger.debug("HttpBin listening on {}", httpBinEndpoint);
-
-        client = new HttpClient();
-        ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        proxyConfig.getProxies().add(new HttpProxy(proxyEndpoint.getHost(),
-                proxyEndpoint.getPort()));
-        client.start();
     }
 
     @After
@@ -204,6 +215,33 @@ public final class ChaosHttpProxyTest {
                 ImmutableList.of(Failure.HTTP_301, Failure.SUCCESS)));
         assertThat(client.GET(httpBinEndpoint + "/status/200").getStatus())
                 .as("status").isEqualTo(200);
+    }
+
+    @Test
+    public void testContentLengthNotStrippedByJettyBug() throws Exception {
+        // Set up a handler that asserts the presence of a content-length
+        httpBin.stop();
+        final AtomicReference<Boolean> gotContentLength =
+                new AtomicReference<>(false);
+        setupHttpBin(new HttpBin(httpBinEndpoint, new HttpBinHandler() {
+                @Override
+                public void handle(String target, Request baseRequest,
+                        HttpServletRequest request,
+                        HttpServletResponse servletResponse)
+                        throws IOException {
+                    if (request.getHeader(
+                            HttpHeader.CONTENT_LENGTH.asString()) != null) {
+                        gotContentLength.set(true);
+                    }
+                }
+            }));
+
+        // The content has to be large-ish to exercise the bug
+        client.POST(httpBinEndpoint + "/post")
+                .content(new BytesContentProvider(new byte[65536]))
+                .header(HttpHeader.CONTENT_LENGTH, String.valueOf(65536))
+                .send();
+        assertThat(gotContentLength.get()).isTrue();
     }
 
     /** Supplier whose elements are provided by an Iterable. */
