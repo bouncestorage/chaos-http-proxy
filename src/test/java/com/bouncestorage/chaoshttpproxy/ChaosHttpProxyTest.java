@@ -146,9 +146,11 @@ public final class ChaosHttpProxyTest {
 
     @Test
     public void testHttpPut() throws Exception {
-        client.newRequest(httpBinEndpoint + "/put")
+        ContentResponse response = client.newRequest(httpBinEndpoint + "/put")
+                .method("PUT")
                 .content(new BytesContentProvider(new byte[1]))
                 .send();
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
 
     @Test
@@ -160,7 +162,8 @@ public final class ChaosHttpProxyTest {
 
     @Test
     public void testHttpGetFullData() throws Exception {
-        client.GET(httpBinEndpoint + "/get");
+        ContentResponse response = client.GET(httpBinEndpoint + "/get");
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
 
     @Test

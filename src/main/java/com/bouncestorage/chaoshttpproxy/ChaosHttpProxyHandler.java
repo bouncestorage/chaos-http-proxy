@@ -70,6 +70,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             HttpServletRequest request, HttpServletResponse servletResponse)
             throws IOException {
         Failure failure = supplier.get();
+        logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
         try (InputStream is = request.getInputStream();
              OutputStream os = servletResponse.getOutputStream()) {
@@ -87,7 +88,6 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 }
                 separator = "&";
             }
-            logger.debug("uri: {}", uri);
             String redirectedUri = redirects.get(uri.toString());
             if (redirectedUri != null) {
                 // TODO: parameters
