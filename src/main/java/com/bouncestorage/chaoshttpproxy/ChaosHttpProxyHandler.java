@@ -69,6 +69,14 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
     public void handle(String target, Request baseRequest,
             HttpServletRequest request, HttpServletResponse servletResponse)
             throws IOException {
+        // CONNECT is not supported pending implementation of MITM HTTPS
+        if (request.getMethod().equals("CONNECT")) {
+            logger.debug("CONNECT is not supported");
+            servletResponse.sendError(
+                    HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
+
         Failure failure = supplier.get();
         logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
