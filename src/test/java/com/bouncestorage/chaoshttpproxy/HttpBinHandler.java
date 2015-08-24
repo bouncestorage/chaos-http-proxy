@@ -18,6 +18,7 @@ package com.bouncestorage.chaoshttpproxy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -45,17 +46,17 @@ class HttpBinHandler extends AbstractHandler {
         String method = request.getMethod();
         String uri = request.getRequestURI();
         try (InputStream is = request.getInputStream();
-             Writer writer = new OutputStreamWriter(
-                    servletResponse.getOutputStream(),
-                    StandardCharsets.UTF_8)) {
-            ByteStreams.copy(is, ByteStreams.nullOutputStream());
+             OutputStream os = servletResponse.getOutputStream()) {
+            Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
             if (method.equals("GET") && uri.startsWith("/status/")) {
+                ByteStreams.copy(is, ByteStreams.nullOutputStream());
                 int status = Integer.parseInt(uri.substring(
                         "/status/".length()));
                 servletResponse.setStatus(status);
                 baseRequest.setHandled(true);
                 return;
             } else if (method.equals("GET") && uri.equals("/get")) {
+                ByteStreams.copy(is, ByteStreams.nullOutputStream());
                 // TODO: return JSON blob of request
                 String content = "Hello, world!";
                 servletResponse.setContentLength(content.length());
@@ -65,15 +66,18 @@ class HttpBinHandler extends AbstractHandler {
                 writer.flush();
                 return;
             } else if (method.equals("POST") && uri.equals("/post")) {
+                ByteStreams.copy(is, os);
                 servletResponse.setStatus(HttpServletResponse.SC_OK);
                 baseRequest.setHandled(true);
                 return;
             } else if (method.equals("PUT") && uri.equals("/put")) {
+                ByteStreams.copy(is, os);
                 servletResponse.setStatus(HttpServletResponse.SC_OK);
                 baseRequest.setHandled(true);
                 return;
             } else if (method.equals("GET") &&
                     uri.equals("/response-headers")) {
+                ByteStreams.copy(is, ByteStreams.nullOutputStream());
                 for (String paramName : Collections.list(
                         request.getParameterNames())) {
                     servletResponse.addHeader(paramName, request.getParameter(
