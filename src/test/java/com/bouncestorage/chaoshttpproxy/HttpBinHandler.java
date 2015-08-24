@@ -43,6 +43,11 @@ class HttpBinHandler extends AbstractHandler {
             HttpServletRequest request, HttpServletResponse servletResponse)
             throws IOException {
         logger.trace("request: {}", request);
+        for (String headerName : Collections.list(
+                request.getHeaderNames())) {
+            logger.trace("header: {}: {}", headerName,
+                    request.getHeader(headerName));
+        }
         String method = request.getMethod();
         String uri = request.getRequestURI();
         try (InputStream is = request.getInputStream();
