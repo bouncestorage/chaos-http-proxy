@@ -85,16 +85,9 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             StringBuilder uri = new StringBuilder("http://")
                     .append(request.getHeader(HttpHeaders.HOST))
                     .append(request.getRequestURI());
-            String separator = "?";
-            for (String parameterName :
-                    Collections.list(request.getParameterNames())) {
-                uri.append(separator).append(parameterName);
-                // TODO: duplicate parameters?
-                String parameterValue = request.getParameter(parameterName);
-                if (parameterValue != null) {
-                    uri.append("=").append(parameterValue);
-                }
-                separator = "&";
+            String queryString = request.getQueryString();
+            if (queryString != null) {
+                uri.append("?" + queryString);
             }
             String redirectedUri = redirects.get(uri.toString());
             if (redirectedUri != null) {

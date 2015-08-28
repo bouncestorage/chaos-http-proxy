@@ -129,13 +129,18 @@ public final class ChaosHttpProxyTest {
 
     @Test
     public void testHttpGetHeaders() throws Exception {
-        String headerName = "X-Test-Header";
-        String headerValue = "Test-Value";
+        String headerName1 = "X-Test-Header1";
+        String headerValue1 = "Test-Value1";
+        String headerName2 = "X-Test-Header2";
+        String headerValue2 = "Test-Value2";
         ContentResponse response = client.GET(
-                httpBinEndpoint + "/response-headers?" + headerName +
-                "=" + headerValue);
-        assertThat(response.getHeaders().getField(headerName).getValue())
-                .isEqualTo(headerValue);
+                httpBinEndpoint + "/response-headers" +
+                "?" + headerName1 + "=" + headerValue1 +
+                "&" + headerName2 + "=" + headerValue2);
+        assertThat(response.getHeaders().getField(headerName1).getValue())
+                .isEqualTo(headerValue1);
+        assertThat(response.getHeaders().getField(headerName2).getValue())
+                .isEqualTo(headerValue2);
     }
 
     @Test
