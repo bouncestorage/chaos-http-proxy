@@ -72,6 +72,8 @@ References
 * [Hamms](https://github.com/kevinburke/hamms) - designed to elicit failures in your HTTP Client, similar to httpbin
 * [httpbin](http://httpbin.org/) - HTTP Request & Response Service which can deterministically exercise HTTP functionality
 * [pathod](http://pathod.net/docs/pathod) - programmable HTTP server
+* [toxiproxy](https://github.com/Shopify/toxiproxy) - A proxy to simulate network and system conditions
+* [toxy](https://github.com/h2non/toxy) - Hackable HTTP proxy to simulate server failure scenarios and unexpected network conditions
 * [Vaurien](https://github.com/mozilla-services/vaurien) - Chaos TCP Proxy
 
 License
