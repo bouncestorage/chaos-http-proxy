@@ -16,25 +16,6 @@
 
 package com.bouncestorage.chaoshttpproxy;
 
-import static java.util.Objects.requireNonNull;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
@@ -44,7 +25,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.Uninterruptibles;
-
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
@@ -54,6 +35,26 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static java.util.Objects.requireNonNull;
 
 final class ChaosHttpProxyHandler extends AbstractHandler {
     private static final Logger logger = LoggerFactory.getLogger(
@@ -80,6 +81,8 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             return;
         }
 
+        logger.info("----------------------------------------start------------------------------------------------");
+
         Failure failure = supplier.get();
         logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
@@ -88,6 +91,9 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
                     HttpHeaders.HOST));
             String queryString = request.getQueryString();
+
+            logger.info("queryString: {}", queryString);
+
             URI uri;
             try {
                 uri = new URI(request.getScheme(),
@@ -100,7 +106,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             } catch (URISyntaxException use) {
                 throw new IOException(use);
             }
-            logger.debug("uri: {}", uri);
+            logger.info("uri: {}", uri);
             URI redirectedUri = redirects.get(uri);
             if (redirectedUri != null) {
                 // TODO: parameters
@@ -161,7 +167,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     continue;
                 }
                 String headerValue = request.getHeader(headerName);
-                logger.trace("{}: {}", headerName, headerValue);
+                logger.info("{}: {}", headerName, headerValue);
 
                 if (headerName.equalsIgnoreCase(HttpHeaders.CONTENT_MD5) &&
                         failure == Failure.CORRUPT_REQUEST_CONTENT_MD5) {
@@ -173,15 +179,23 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 clientRequest.header(headerName, headerValue);
             }
 
+            String content = IOUtils.toString(is);
+
+            logger.info("{}", content);
+
+            InputStream  inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+
             // Work around Jetty bug that strips Content-Length
             // https://bugs.eclipse.org/bugs/show_bug.cgi?id=475613.
             final long length = userContentLength;
-            clientRequest.content(new InputStreamContentProvider(is) {
+            clientRequest.content(new InputStreamContentProvider(inputStream) {
                     @Override
                     public long getLength() {
                         return length != -1 ? length : super.getLength();
                     }
                 });
+
+
             clientRequest.send(listener);
             if (failure == Failure.PARTIAL_REQUEST) {
                 return;
@@ -251,6 +265,11 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 ByteStreams.copy(responseContent, os);
             }
         }
+
+
+        logger.info("----------------------------------------end--------------------------------------------------");
+        logger.info("");
+
     }
 
     @VisibleForTesting
