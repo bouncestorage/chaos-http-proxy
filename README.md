@@ -44,6 +44,13 @@ Windows users must explicitly invoke java:
 java -jar chaos-http-proxy --properties chaos-http-proxy.conf
 ```
 
+An example using `curl`:
+
+```
+curl --fail --proxy http://localhost:1080/ http://google.com/
+curl: (22) The requested URL returned error: 500 Server Error
+```
+
 Configuring Failure Rates
 -------------------------
 
