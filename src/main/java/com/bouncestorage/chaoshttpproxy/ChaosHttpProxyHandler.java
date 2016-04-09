@@ -257,4 +257,8 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
     void setFailureSupplier(Supplier<Failure> supplier) {
         this.supplier = requireNonNull(supplier);
     }
+
+    Supplier<Failure> getFailureSupplier() {
+        return this.supplier;
+    }
 }
