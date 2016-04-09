@@ -25,9 +25,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
-import com.google.common.base.Supplier;
-import com.google.common.io.Resources;
-
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
