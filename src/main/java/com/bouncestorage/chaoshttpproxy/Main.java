@@ -23,11 +23,12 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.Random;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import com.google.common.io.Resources;
 
 public final class Main {
     private Main() {
