@@ -23,9 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.Random;
 
-import com.google.common.base.Supplier;
 import com.google.common.io.Resources;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -38,16 +36,13 @@ public final class Main {
     }
 
     private static final class Options {
-        @Option(name = "--address",
-                usage = "Address to listen on (default 127.0.0.1)")
+        @Option(name = "--address", usage = "Address to listen on (default 127.0.0.1)")
         private String address = "127.0.0.1";
 
         @Option(name = "--port", usage = "Port to listen on (default: 1080)")
         private int port = 1080;
 
-        @Option(name = "--properties",
-                usage = "Proxy configuration (defaults to 1% chance of all" +
-                " failures")
+        @Option(name = "--properties", usage = "Proxy configuration (defaults to 1% chance of all failures")
         private File propertiesFile;
 
         @Option(name = "--version", usage = "display version")
@@ -71,8 +66,10 @@ public final class Main {
 
         Properties properties = new Properties();
         if (options.propertiesFile == null) {
-            try (InputStream is = Resources.asByteSource(Resources.getResource(
-                    "chaos-http-proxy.conf")).openStream()) {
+            try (InputStream is = Resources
+                    .asByteSource(
+                            Resources.getResource("chaos-http-proxy.conf"))
+                    .openStream()) {
                 properties.load(is);
             }
         } else {
@@ -101,17 +98,18 @@ public final class Main {
                 System.exit(1);
                 throw iae;
             }
-            int occurrences = Integer.parseInt(properties.getProperty(
-                    propertyName));
+            int occurrences = Integer
+                    .parseInt(properties.getProperty(propertyName));
             for (int i = 0; i < occurrences; ++i) {
                 failures.add(failure);
             }
         }
 
-        URI proxyEndpoint = new URI("http", null, options.address,
-                options.port, null, null, null);
+        URI proxyEndpoint = new URI("http", null, options.address, options.port,
+                null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,
                 new RandomFailureSupplier(failures));
+        try {
             proxy.start();
         } catch (Exception e) {
             System.err.println(e.getMessage());

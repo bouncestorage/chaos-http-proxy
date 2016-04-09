@@ -31,6 +31,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -39,61 +44,55 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 public final class ChaosHttpProxy {
     private final HttpClient client;
     private final Server server;
     private final ChaosHttpProxyHandler handler;
 
     // TODO: authentication
-    public ChaosHttpProxy(URI endpoint, Supplier<Failure> supplier)
-            throws Exception {
+    public ChaosHttpProxy(URI endpoint, Supplier<Failure> supplier) throws Exception {
         requireNonNull(endpoint);
 
         client = new HttpClient();
 
         server = new Server();
-        HttpConnectionFactory httpConnectionFactory =
-                new HttpConnectionFactory();
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         // TODO: SSL
-        ServerConnector connector = new ServerConnector(server,
-                httpConnectionFactory);
+        ServerConnector connector = new ServerConnector(server, httpConnectionFactory);
         connector.setHost(endpoint.getHost());
         connector.setPort(endpoint.getPort());
         server.addConnector(connector);
         this.handler = new ChaosHttpProxyHandler(client, supplier);
         HandlerList handlers = new HandlerList();
-        handlers.addHandler(new AbstractHandler(){
+        handlers.addHandler(new AbstractHandler() {
 
-			@Override
-			public void handle(String target, Request baseRequest, HttpServletRequest request,
-					HttpServletResponse response) throws IOException, ServletException {
-				if(request.getMethod().equals("POST") && target.equals("/chaos/api")){
-					
-					BufferedReader r = new BufferedReader(new InputStreamReader(request.getInputStream()));
-					Gson gson = new Gson();
-					Type type = new TypeToken<Map<String, Integer>>(){}.getType();
-					Map<String, Integer> failureConfig = gson.fromJson(r, type);
-					List<Failure> failures = new ArrayList<Failure>();
-					for(String key : failureConfig.keySet()){
-						Failure failure = Failure.valueOf(key.toUpperCase());
-						int size = failureConfig.get(key);
-						for(int i= 0; i < size; i++){
-							failures.add(failure);
-						}
-					}
-					
-					handler.setFailureSupplier(new RandomFailureSupplier(failures));
-					
-					response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-					response.getWriter().close();
-				}
-				
-			}});
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request,
+                    HttpServletResponse response) throws IOException, ServletException {
+                if (request.getMethod().equals("POST") && target.equals("/chaos/api")) {
+
+                    BufferedReader r = new BufferedReader(new InputStreamReader(request.getInputStream()));
+                    Gson gson = new Gson();
+                    Type type = new TypeToken<Map<String, Integer>>() {
+                    }.getType();
+                    Map<String, Integer> failureConfig = gson.fromJson(r, type);
+                    List<Failure> failures = new ArrayList<Failure>();
+                    for (String key : failureConfig.keySet()) {
+                        Failure failure = Failure.valueOf(key.toUpperCase());
+                        int size = failureConfig.get(key);
+                        for (int i = 0; i < size; i++) {
+                            failures.add(failure);
+                        }
+                    }
+
+                    handler.setFailureSupplier(new RandomFailureSupplier(failures));
+
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                    response.getWriter().close();
+                }
+
+            }
+        });
         handlers.addHandler(handler);
         server.setHandler(handlers);
     }

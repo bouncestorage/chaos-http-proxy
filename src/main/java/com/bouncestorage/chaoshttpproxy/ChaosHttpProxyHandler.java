@@ -56,8 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class ChaosHttpProxyHandler extends AbstractHandler {
-    private static final Logger logger = LoggerFactory.getLogger(
-            ChaosHttpProxyHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChaosHttpProxyHandler.class);
     private final HttpClient client;
     // TODO: AtomicReference?
     private Supplier<Failure> supplier;
@@ -69,34 +68,28 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-            HttpServletRequest request, HttpServletResponse servletResponse)
-            throws IOException {
+    public void handle(String target, Request baseRequest, HttpServletRequest request,
+            HttpServletResponse servletResponse) throws IOException {
         // CONNECT is not supported pending implementation of MITM HTTPS
         if (request.getMethod().equals("CONNECT")) {
             logger.debug("CONNECT is not supported");
-            servletResponse.sendError(
-                    HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            servletResponse.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
         Failure failure = supplier.get();
         logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
-        try (InputStream is = request.getInputStream();
-             OutputStream os = servletResponse.getOutputStream()) {
-            HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
-                    HttpHeaders.HOST));
+        try (
+                InputStream is = request.getInputStream();
+                OutputStream os = servletResponse.getOutputStream()) {
+            HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(HttpHeaders.HOST));
             String queryString = request.getQueryString();
             URI uri;
             try {
-                uri = new URI(request.getScheme(),
-                        /*userInfo=*/ null,
-                        hostAndPort.getHostText(),
-                        hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
-                        request.getRequestURI(),
-                        queryString,
-                        /*fragment=*/ null);
+                uri = new URI(request.getScheme(), /* userInfo= */ null, hostAndPort.getHostText(),
+                        hostAndPort.hasPort() ? hostAndPort.getPort() : 80, request.getRequestURI(), queryString,
+                        /* fragment= */ null);
             } catch (URISyntaxException use) {
                 throw new IOException(use);
             }
@@ -117,19 +110,14 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 servletResponse.setStatus(failure.getResponseCode());
                 URI redirectUri;
                 try {
-                    redirectUri = new URI(request.getScheme(),
-                            /*userInfo=*/ null,
-                            hostAndPort.getHostText(),
-                            hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
-                            "/" + UUID.randomUUID().toString(),
-                            /*query=*/ null,
-                            /*fragment=*/ null);
+                    redirectUri = new URI(request.getScheme(), /* userInfo= */ null, hostAndPort.getHostText(),
+                            hostAndPort.hasPort() ? hostAndPort.getPort() : 80, "/" + UUID.randomUUID().toString(),
+                            /* query= */ null, /* fragment= */ null);
                 } catch (URISyntaxException use) {
                     throw new IOException(use);
                 }
                 redirects.put(redirectUri, uri);
-                servletResponse.addHeader(HttpHeaders.LOCATION,
-                        redirectUri.toString());
+                servletResponse.addHeader(HttpHeaders.LOCATION, redirectUri.toString());
                 return;
             case HTTP_408:
             case HTTP_500:
@@ -138,26 +126,22 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 servletResponse.setStatus(failure.getResponseCode());
                 return;
             case TIMEOUT:
-                Uninterruptibles.sleepUninterruptibly(Long.MAX_VALUE,
-                        TimeUnit.DAYS);
+                Uninterruptibles.sleepUninterruptibly(Long.MAX_VALUE, TimeUnit.DAYS);
                 return;
             default:
                 break;
             }
 
-            InputStreamResponseListener listener =
-                    new InputStreamResponseListener();
+            InputStreamResponseListener listener = new InputStreamResponseListener();
             InputStream iss = failure == Failure.PARTIAL_REQUEST ?
                     // TODO: random limit
                     ByteStreams.limit(is, 1024) : is;
-            org.eclipse.jetty.client.api.Request clientRequest = client
-                    .newRequest(uri.toString())
+            org.eclipse.jetty.client.api.Request clientRequest = client.newRequest(uri.toString())
                     .method(request.getMethod());
             long userContentLength = -1;
-            for (String headerName :
-                    Collections.list(request.getHeaderNames())) {
+            for (String headerName : Collections.list(request.getHeaderNames())) {
                 if (headerName.equalsIgnoreCase(HttpHeaders.EXPECT) ||
-                        headerName.equalsIgnoreCase("Proxy-Connection")) {
+                       headerName.equalsIgnoreCase("Proxy-Connection")) {
                     continue;
                 }
                 String headerValue = request.getHeader(headerName);
@@ -177,11 +161,11 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             // https://bugs.eclipse.org/bugs/show_bug.cgi?id=475613.
             final long length = userContentLength;
             clientRequest.content(new InputStreamContentProvider(is) {
-                    @Override
-                    public long getLength() {
-                        return length != -1 ? length : super.getLength();
-                    }
-                });
+                @Override
+                public long getLength() {
+                    return length != -1 ? length : super.getLength();
+                }
+            });
             clientRequest.send(listener);
             if (failure == Failure.PARTIAL_REQUEST) {
                 return;
@@ -190,15 +174,13 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             Response response;
             try {
                 response = listener.get(Long.MAX_VALUE, TimeUnit.SECONDS);
-            } catch (ExecutionException | InterruptedException |
-                    TimeoutException e) {
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 throw new IOException(e);
             }
             int status = response.getStatus();
             logger.trace("status: {}", status);
             servletResponse.setStatus(status);
-            List<HttpField> headers = Lists.newArrayList(
-                    response.getHeaders());
+            List<HttpField> headers = Lists.newArrayList(response.getHeaders());
             if (failure == Failure.REORDER_HEADERS) {
                 Collections.shuffle(headers);
             }
@@ -213,8 +195,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     break;
                 case CORRUPT_RESPONSE_CONTENT_MD5:
                     if (header.equals(HttpHeaders.CONTENT_MD5)) {
-                        value = BaseEncoding.base64().encode(
-                                new byte[Hashing.md5().bits() / 8]);
+                        value = BaseEncoding.base64().encode(new byte[Hashing.md5().bits() / 8]);
                     }
                     break;
                 default:
@@ -241,8 +222,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                         }
                         os.write(ch);
                         os.flush();
-                        Uninterruptibles.sleepUninterruptibly(1,
-                                TimeUnit.SECONDS);
+                        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
                     }
                     break;
                 default:
