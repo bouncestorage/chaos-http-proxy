@@ -56,6 +56,9 @@ enum Failure {
     /** Default. */
     SUCCESS;
 
+    static final String CHAOS_CONFIG_PREFIX =
+            "com.bouncestorage.chaoshttpproxy.";
+
     private int responseCode;
 
     Failure() {
@@ -68,5 +71,22 @@ enum Failure {
 
     int getResponseCode() {
         return responseCode;
+    }
+
+    String toPropertyName() {
+        return Failure.CHAOS_CONFIG_PREFIX + super.toString().toLowerCase();
+    }
+
+    static Failure fromPropertyName(String propertyName) {
+        if (propertyName.startsWith(CHAOS_CONFIG_PREFIX)) {
+            try {
+                return Failure.valueOf(propertyName.substring(
+                        CHAOS_CONFIG_PREFIX.length()).toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                // handled below
+            }
+        }
+        throw new IllegalArgumentException("Unexpected failure type: " +
+                propertyName);
     }
 }

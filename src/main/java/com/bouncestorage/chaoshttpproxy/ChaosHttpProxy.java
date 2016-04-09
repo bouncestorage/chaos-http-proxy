@@ -19,6 +19,7 @@ package com.bouncestorage.chaoshttpproxy;
 import static java.util.Objects.requireNonNull;
 
 import java.net.URI;
+import java.util.Objects;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
@@ -27,15 +28,22 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.HandlerList;
 
 public final class ChaosHttpProxy {
     private final HttpClient client;
     private final Server server;
     private final ChaosHttpProxyHandler handler;
+    private ChaosConfig config;
 
     // TODO: authentication
-    public ChaosHttpProxy(URI endpoint, Supplier<Failure> supplier)
+    public ChaosHttpProxy(URI endpoint, ChaosConfig config)
             throws Exception {
+        setChaosConfig(config);
+
+        Supplier<Failure> supplier = new RandomFailureSupplier(
+                config.getFailures());
+
         requireNonNull(endpoint);
 
         client = new HttpClient();
@@ -50,7 +58,18 @@ public final class ChaosHttpProxy {
         connector.setPort(endpoint.getPort());
         server.addConnector(connector);
         this.handler = new ChaosHttpProxyHandler(client, supplier);
-        server.setHandler(handler);
+        HandlerList handlers = new HandlerList();
+        handlers.addHandler(new ChaosApiHandler(this, handler));
+        handlers.addHandler(handler);
+        server.setHandler(handlers);
+    }
+
+    protected ChaosConfig getChaosConfig() {
+        return config;
+    }
+
+    void setChaosConfig(ChaosConfig config) {
+        this.config = Objects.requireNonNull(config);
     }
 
     public void start() throws Exception {

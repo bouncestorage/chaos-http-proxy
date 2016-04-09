@@ -20,10 +20,13 @@ import static java.util.Objects.requireNonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -65,13 +68,16 @@ public final class ChaosHttpProxyTest {
     private URI httpBinEndpoint = URI.create("http://127.0.0.1:0");
 
     private ChaosHttpProxy proxy;
+    private ChaosConfig config;
     private HttpBin httpBin;
     private HttpClient client;
 
     @Before
     public void setUp() throws Exception {
-        proxy = new ChaosHttpProxy(proxyEndpoint,
-                Suppliers.ofInstance(Failure.SUCCESS));
+        Properties properties = new Properties();
+        properties.setProperty(Failure.CHAOS_CONFIG_PREFIX + "success", "5");
+        config = new ChaosConfig(properties);
+        proxy = new ChaosHttpProxy(proxyEndpoint, config);
         proxy.start();
 
         // reset endpoint to handle zero port
@@ -274,6 +280,44 @@ public final class ChaosHttpProxyTest {
                 .header(HttpHeader.CONTENT_LENGTH, String.valueOf(65536))
                 .send();
         assertThat(gotContentLength.get()).isTrue();
+    }
+
+    @Test
+    public void testApi() throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty(Failure.CHAOS_CONFIG_PREFIX + "success", "6");
+        properties.setProperty(Failure.CHAOS_CONFIG_PREFIX + "timeout", "3");
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        properties.store(os, "test");
+
+        // reset client to avoid proxy
+        client.stop();
+        client = new HttpClient();
+        ProxyConfiguration proxyConfig = client.getProxyConfiguration();
+        client.start();
+
+        ContentResponse response = client.POST(proxyEndpoint + "/chaos/api")
+                .content(new BytesContentProvider(os.toByteArray()))
+                .send();
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
+
+        validateApiResponse(client.GET(proxyEndpoint + "/chaos/api"));
+    }
+
+    private void validateApiResponse(ContentResponse response)
+            throws IOException {
+        Properties responseProperties = new Properties();
+        responseProperties
+                .load(new ByteArrayInputStream(response.getContent()));
+        assertThat(responseProperties.size()).as("size").isEqualTo(2);
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_PREFIX + "success"))
+                        .as("success config").isEqualTo("6");
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_PREFIX + "timeout"))
+                        .as("timeout config").isEqualTo("3");
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
 
     /** Supplier whose elements are provided by an Iterable. */
