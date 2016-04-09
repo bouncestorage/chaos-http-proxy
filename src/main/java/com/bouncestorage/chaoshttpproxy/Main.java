@@ -111,15 +111,7 @@ public final class Main {
         URI proxyEndpoint = new URI("http", null, options.address,
                 options.port, null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,
-                new Supplier<Failure>() {
-                    private final Random random = new Random();
-
-                    @Override
-                    public Failure get() {
-                        return failures.get(random.nextInt(failures.size()));
-                    }
-                });
-        try {
+                new RandomFailureSupplier(failures));
             proxy.start();
         } catch (Exception e) {
             System.err.println(e.getMessage());
