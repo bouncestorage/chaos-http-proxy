@@ -112,6 +112,7 @@ public final class Main {
                 options.port, null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,
                 new RandomFailureSupplier(failures));
+        try{
             proxy.start();
         } catch (Exception e) {
             System.err.println(e.getMessage());
