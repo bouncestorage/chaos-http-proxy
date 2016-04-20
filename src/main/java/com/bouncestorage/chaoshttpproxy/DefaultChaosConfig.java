@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Bounce Storage, Inc. <info@bouncestorage.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.bouncestorage.chaoshttpproxy;
 
 import java.io.IOException;
@@ -7,27 +23,10 @@ import java.util.List;
 import java.util.Properties;
 
 public class DefaultChaosConfig implements ChaosConfig {
-    
-    private Properties properties;
-    
-    private List<Failure> failures;
-    
-    /* (non-Javadoc)
-     * @see com.bouncestorage.chaoshttpproxy.ChaosConfig_#getProperties()
-     */
-    @Override
-    public Properties getProperties() {
-        return properties;
-    }
-    
 
-    /* (non-Javadoc)
-     * @see com.bouncestorage.chaoshttpproxy.ChaosConfig_#getFailures()
-     */
-    @Override
-    public List<Failure> getFailures() {
-        return failures;
-    }
+    private List<Failure> failures;
+
+    private Properties properties;
 
     public DefaultChaosConfig(InputStream is)
             throws IOException {
@@ -59,6 +58,22 @@ public class DefaultChaosConfig implements ChaosConfig {
             }
         }
 
+    }
+
+    /* (non-Javadoc)
+     * @see com.bouncestorage.chaoshttpproxy.ChaosConfig_#getFailures()
+     */
+    @Override
+    public final List<Failure> getFailures() {
+        return failures;
+    }
+
+    /* (non-Javadoc)
+     * @see com.bouncestorage.chaoshttpproxy.ChaosConfig_#getProperties()
+     */
+    @Override
+    public final Properties getProperties() {
+        return properties;
     }
 
 

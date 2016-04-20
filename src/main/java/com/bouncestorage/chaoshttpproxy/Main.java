@@ -18,19 +18,15 @@ package com.bouncestorage.chaoshttpproxy;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+
+import com.google.common.io.Resources;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
-import com.google.common.io.Resources;
 
 public final class Main {
     private Main() {
@@ -74,16 +70,20 @@ public final class Main {
             try {
                 is = Resources.asByteSource(Resources.getResource(
                         "chaos-http-proxy.conf")).openStream();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
             }
-            catch(Exception e){}
         } else {
             try {
                 is = new FileInputStream(options.propertiesFile);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
             }
-            catch(Exception e){}
         }
         ChaosConfig chaosConfig = new DefaultChaosConfig(is);
-        
+
         URI proxyEndpoint = new URI("http", null, options.address,
                 options.port, null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,

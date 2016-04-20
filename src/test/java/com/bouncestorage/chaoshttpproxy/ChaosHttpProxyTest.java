@@ -17,6 +17,7 @@
 package com.bouncestorage.chaoshttpproxy;
 
 import static java.util.Objects.requireNonNull;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
@@ -37,6 +38,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HttpHeaders;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
@@ -54,14 +60,9 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HttpHeaders;
-
 public final class ChaosHttpProxyTest {
-    private static final Logger logger = LoggerFactory.getLogger(
-            ChaosHttpProxyTest.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(ChaosHttpProxyTest.class);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -78,7 +79,7 @@ public final class ChaosHttpProxyTest {
 
     @Before
     public void setUp() throws Exception {
-        chaosConfig = new ChaosConfig(){
+        chaosConfig = new ChaosConfig() {
 
             @Override
             public Properties getProperties() {
@@ -92,16 +93,17 @@ public final class ChaosHttpProxyTest {
                 ArrayList<Failure> failures = new ArrayList<Failure>(1);
                 failures.add(Failure.SUCCESS);
                 return failures;
-            }};
-        proxy = new ChaosHttpProxy(proxyEndpoint,
-                chaosConfig);
+            }
+        };
+        proxy = new ChaosHttpProxy(proxyEndpoint, chaosConfig);
         proxy.start();
 
         // reset endpoint to handle zero port
-        proxyEndpoint = new URI(proxyEndpoint.getScheme(),
-                proxyEndpoint.getUserInfo(), proxyEndpoint.getHost(),
-                proxy.getPort(), proxyEndpoint.getPath(),
-                proxyEndpoint.getQuery(), proxyEndpoint.getFragment());
+        proxyEndpoint =
+                new URI(proxyEndpoint.getScheme(), proxyEndpoint.getUserInfo(),
+                        proxyEndpoint.getHost(), proxy.getPort(),
+                        proxyEndpoint.getPath(), proxyEndpoint.getQuery(),
+                        proxyEndpoint.getFragment());
         logger.debug("ChaosHttpProxy listening on {}", proxyEndpoint);
 
         setupHttpBin(new HttpBin(httpBinEndpoint));
@@ -118,10 +120,12 @@ public final class ChaosHttpProxyTest {
         httpBin.start();
 
         // reset endpoint to handle zero port
-        httpBinEndpoint = new URI(httpBinEndpoint.getScheme(),
-                httpBinEndpoint.getUserInfo(), httpBinEndpoint.getHost(),
-                httpBin.getPort(), httpBinEndpoint.getPath(),
-                httpBinEndpoint.getQuery(), httpBinEndpoint.getFragment());
+        httpBinEndpoint =
+                new URI(httpBinEndpoint.getScheme(),
+                        httpBinEndpoint.getUserInfo(),
+                        httpBinEndpoint.getHost(), httpBin.getPort(),
+                        httpBinEndpoint.getPath(), httpBinEndpoint.getQuery(),
+                        httpBinEndpoint.getFragment());
         logger.debug("HttpBin listening on {}", httpBinEndpoint);
     }
 
@@ -156,10 +160,10 @@ public final class ChaosHttpProxyTest {
         String headerValue1 = "Test-Value1";
         String headerName2 = "X-Test-Header2";
         String headerValue2 = "Test-Value2";
-        ContentResponse response = client.GET(
-                httpBinEndpoint + "/response-headers" +
-                "?" + headerName1 + "=" + headerValue1 +
-                "&" + headerName2 + "=" + headerValue2);
+        ContentResponse response =
+                client.GET(httpBinEndpoint + "/response-headers" + "?" +
+                        headerName1 + "=" + headerValue1 + "&" + headerName2 +
+                        "=" + headerValue2);
         assertThat(response.getHeaders().getField(headerName1).getValue())
                 .isEqualTo(headerValue1);
         assertThat(response.getHeaders().getField(headerName2).getValue())
@@ -168,16 +172,15 @@ public final class ChaosHttpProxyTest {
 
     @Test
     public void testHttpPost() throws Exception {
-        assertThat(client.POST(httpBinEndpoint + "/post")
-                .send().getStatus()).as("status").isEqualTo(200);
+        assertThat(client.POST(httpBinEndpoint + "/post").send().getStatus())
+                .as("status").isEqualTo(200);
     }
 
     @Test
     public void testHttpPut() throws Exception {
-        ContentResponse response = client.newRequest(httpBinEndpoint + "/put")
-                .method("PUT")
-                .content(new BytesContentProvider(new byte[1]))
-                .send();
+        ContentResponse response =
+                client.newRequest(httpBinEndpoint + "/put").method("PUT")
+                        .content(new BytesContentProvider(new byte[1])).send();
         assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
 
@@ -197,30 +200,30 @@ public final class ChaosHttpProxyTest {
     @Test
     public void testHttpPostPartialData() throws Exception {
         int contentLength = 65536 + 1;
-        proxy.setFailureSupplier(Suppliers.ofInstance(
-                Failure.PARTIAL_REQUEST));
-        ContentResponse response = client.POST(httpBinEndpoint + "/post")
-                .content(new BytesContentProvider(new byte[contentLength]))
-                .send();
+        proxy.setFailureSupplier(Suppliers.ofInstance(Failure.PARTIAL_REQUEST));
+        ContentResponse response =
+                client.POST(httpBinEndpoint + "/post").content(
+                        new BytesContentProvider(new byte[contentLength]))
+                        .send();
         assertThat(response.getContent().length).isNotEqualTo(contentLength);
     }
 
     @Test
     public void testHttpPutPartialData() throws Exception {
         int contentLength = 65536 + 1;
-        proxy.setFailureSupplier(Suppliers.ofInstance(
-                Failure.PARTIAL_REQUEST));
-        ContentResponse response = client.newRequest(httpBinEndpoint + "/put")
-                .method("PUT")
-                .content(new BytesContentProvider(new byte[contentLength]))
-                .send();
+        proxy.setFailureSupplier(Suppliers.ofInstance(Failure.PARTIAL_REQUEST));
+        ContentResponse response =
+                client.newRequest(httpBinEndpoint + "/put").method("PUT")
+                        .content(new BytesContentProvider(
+                                new byte[contentLength]))
+                        .send();
         assertThat(response.getContent().length).isNotEqualTo(contentLength);
     }
 
     @Test
     public void testHttpGetPartialData() throws Exception {
-        proxy.setFailureSupplier(Suppliers.ofInstance(
-                Failure.PARTIAL_RESPONSE));
+        proxy.setFailureSupplier(
+                Suppliers.ofInstance(Failure.PARTIAL_RESPONSE));
         thrown.expect(ExecutionException.class);
         thrown.expectCause(CoreMatchers.isA(EOFException.class));
         client.GET(httpBinEndpoint + "/get");
@@ -238,20 +241,19 @@ public final class ChaosHttpProxyTest {
         proxy.setFailureSupplier(Suppliers.ofInstance(Failure.TIMEOUT));
         thrown.expect(TimeoutException.class);
         client.newRequest(httpBinEndpoint + "/status/200")
-                .timeout(1, TimeUnit.SECONDS)
-                .send();
+                .timeout(1, TimeUnit.SECONDS).send();
     }
 
     @Test
     public void testHttpGetCorruptContentMD5() throws Exception {
-        proxy.setFailureSupplier(Suppliers.ofInstance(
-                Failure.CORRUPT_RESPONSE_CONTENT_MD5));
+        proxy.setFailureSupplier(
+                Suppliers.ofInstance(Failure.CORRUPT_RESPONSE_CONTENT_MD5));
         String headerName = HttpHeaders.CONTENT_MD5;
         String headerValue = "1B2M2Y8AsgTpgAmY7PhCfg==";
         String corruptValue = "AAAAAAAAAAAAAAAAAAAAAA==";
-        ContentResponse response = client.GET(
-                httpBinEndpoint + "/response-headers?" + headerName +
-                "=" + headerValue);
+        ContentResponse response =
+                client.GET(httpBinEndpoint + "/response-headers?" + headerName +
+                        "=" + headerValue);
         assertThat(response.getHeaders().getField(headerName).getValue())
                 .isEqualTo(corruptValue);
     }
@@ -279,17 +281,16 @@ public final class ChaosHttpProxyTest {
         final AtomicReference<Boolean> gotContentLength =
                 new AtomicReference<>(false);
         setupHttpBin(new HttpBin(httpBinEndpoint, new HttpBinHandler() {
-                @Override
-                public void handle(String target, Request baseRequest,
-                        HttpServletRequest request,
-                        HttpServletResponse servletResponse)
-                        throws IOException {
-                    if (request.getHeader(
-                            HttpHeader.CONTENT_LENGTH.asString()) != null) {
-                        gotContentLength.set(true);
-                    }
+            @Override
+            public void handle(String target, Request baseRequest,
+                    HttpServletRequest request,
+                    HttpServletResponse servletResponse) throws IOException {
+                if (request.getHeader(
+                        HttpHeader.CONTENT_LENGTH.asString()) != null) {
+                    gotContentLength.set(true);
                 }
-            }));
+            }
+        }));
 
         // The content has to be large-ish to exercise the bug
         client.POST(httpBinEndpoint + "/post")
@@ -298,47 +299,57 @@ public final class ChaosHttpProxyTest {
                 .send();
         assertThat(gotContentLength.get()).isTrue();
     }
-    
+
     @Test
-    public void testApi() throws InterruptedException, TimeoutException, ExecutionException, IOException{
-        org.eclipse.jetty.client.api.Request request = client.POST(httpBinEndpoint + "/chaos/api");
+    public void testApi() throws InterruptedException, TimeoutException,
+            ExecutionException, IOException {
+        org.eclipse.jetty.client.api.Request request =
+                client.POST(httpBinEndpoint + "/chaos/api");
         Properties properties = new Properties();
         properties.setProperty(Failure.CHAOS_CONFIG_STRING + "success", "6");
         properties.setProperty(Failure.CHAOS_CONFIG_STRING + "timeout", "3");
-        
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        final ByteArrayOutputStream byteArrayOutputStream =
+                new ByteArrayOutputStream();
         properties.store(byteArrayOutputStream, "test");
-        request.content(new ContentProvider(){
+        request.content(new ContentProvider() {
 
             @Override
             public Iterator<ByteBuffer> iterator() {
                 ArrayList<ByteBuffer> buffers = new ArrayList<ByteBuffer>();
-                buffers.add(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
+                buffers.add(
+                        ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
                 return buffers.iterator();
             }
 
             @Override
             public long getLength() {
                 return byteArrayOutputStream.toByteArray().length;
-            }});
+            }
+        });
         validateApiResponse(request.send());
-        
-        //do another get to test the pure get piece. we only do this because 
-        //we're not supposed to depend upon side effects between tests
+
+        // do another get to test the pure get piece. we only do this because
+        // we're not supposed to depend upon side effects between tests
         validateApiResponse(client.GET(httpBinEndpoint + "/chaos/api"));
-        
+
     }
 
     private void validateApiResponse(ContentResponse response)
             throws IOException {
         Properties responseProperties = new Properties();
-        responseProperties.load(new ByteArrayInputStream(response.getContent()));
+        responseProperties
+                .load(new ByteArrayInputStream(response.getContent()));
         assertThat(responseProperties.size()).as("size").isEqualTo(2);
-        assertThat(responseProperties.getProperty(Failure.CHAOS_CONFIG_STRING + "success")).as("success config").isEqualTo("6");
-        assertThat(responseProperties.getProperty(Failure.CHAOS_CONFIG_STRING + "timeout")).as("timeout config").isEqualTo("3");
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_STRING + "success"))
+                        .as("success config").isEqualTo("6");
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_STRING + "timeout"))
+                        .as("timeout config").isEqualTo("3");
         assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
-    
+
     /** Supplier whose elements are provided by an Iterable. */
     private static class SupplierFromIterable<T> implements Supplier<T> {
         private final Iterator<T> iterator;

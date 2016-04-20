@@ -18,24 +18,16 @@ package com.bouncestorage.chaoshttpproxy;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.IOException;
 import java.net.URI;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.HandlerList;
 
 public final class ChaosHttpProxy {
     private final HttpClient client;
@@ -48,8 +40,9 @@ public final class ChaosHttpProxy {
             throws Exception {
         setChaosConfig(chaosConfig);
 
-        Supplier<Failure> supplier = new RandomFailureSupplier(chaosConfig.getFailures());
-        
+        Supplier<Failure> supplier = new RandomFailureSupplier(
+                chaosConfig.getFailures());
+
         requireNonNull(endpoint);
 
         client = new HttpClient();
@@ -65,34 +58,7 @@ public final class ChaosHttpProxy {
         server.addConnector(connector);
         this.handler = new ChaosHttpProxyHandler(client, supplier);
         HandlerList handlers = new HandlerList();
-        handlers.addHandler(new AbstractHandler() {
-
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request,
-                    HttpServletResponse response) throws IOException, ServletException {
-                if (target.equals("/chaos/api")) {
-                    try (ServletOutputStream outputStream = response.getOutputStream()){
-                        if (request.getMethod().equals("POST")) {
-                            ChaosConfig chaosConfig = new DefaultChaosConfig(request.getInputStream());
-                            ChaosHttpProxy.this.setChaosConfig(chaosConfig);
-                            handler.setFailureSupplier(
-                                    new RandomFailureSupplier(chaosConfig.getFailures()));
-
-                        } 
-                        //we're assuming PUT and DELETE aren't used at all
-                        //Code for GET will always execute, thus POST will always
-                        //return equivalent values after processed.
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        ChaosConfig chaosConfig = ChaosHttpProxy.this.getChaosConfig();
-                        chaosConfig.getProperties().store(outputStream, "Output via api");
-                    } catch (Exception e) {
-                        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    }
-                   
-                }
-
-            }
-        });
+        handlers.addHandler(new ChaosApiHandler(this, handler));
         handlers.addHandler(handler);
         server.setHandler(handlers);
     }
@@ -101,7 +67,7 @@ public final class ChaosHttpProxy {
         return chaosConfig;
     }
 
-    private void setChaosConfig(ChaosConfig chaosConfig) {
+    void setChaosConfig(ChaosConfig chaosConfig) {
         this.chaosConfig = chaosConfig;
     }
 

@@ -30,7 +30,7 @@ public class RandomFailureSupplier implements Supplier<Failure> {
         this.failures = failures;
     }
 
-    public List<Failure> getFailures() {
+    public final List<Failure> getFailures() {
         return failures;
     }
 
