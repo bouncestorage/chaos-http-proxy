@@ -56,6 +56,7 @@ enum Failure {
     /** Default. */
     SUCCESS;
 
+    public static final String CHAOS_CONFIG_STRING = "com.bouncestorage.chaoshttpproxy.";
     private int responseCode;
 
     Failure() {
@@ -69,4 +70,13 @@ enum Failure {
     int getResponseCode() {
         return responseCode;
     }
+    
+    public String toString(){
+        return Failure.CHAOS_CONFIG_STRING + super.toString();
+    }
+    
+    public static Failure fromPropertyKey(String propertyKey){
+        return Failure.valueOf(propertyKey.substring(Failure.CHAOS_CONFIG_STRING.length()).toUpperCase());
+    }
+    
 }

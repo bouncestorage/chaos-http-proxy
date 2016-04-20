@@ -30,6 +30,10 @@ public class RandomFailureSupplier implements Supplier<Failure> {
         this.failures = failures;
     }
 
+    public List<Failure> getFailures() {
+        return failures;
+    }
+
     @Override
     public final Failure get() {
         return failures.get(random.nextInt(failures.size()));

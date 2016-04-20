@@ -18,17 +18,19 @@ package com.bouncestorage.chaoshttpproxy;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-
-import com.google.common.io.Resources;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import com.google.common.io.Resources;
 
 public final class Main {
     private Main() {
@@ -36,13 +38,16 @@ public final class Main {
     }
 
     private static final class Options {
-        @Option(name = "--address", usage = "Address to listen on (default 127.0.0.1)")
+        @Option(name = "--address",
+                usage = "Address to listen on (default 127.0.0.1)")
         private String address = "127.0.0.1";
 
         @Option(name = "--port", usage = "Port to listen on (default: 1080)")
         private int port = 1080;
 
-        @Option(name = "--properties", usage = "Proxy configuration (defaults to 1% chance of all failures")
+        @Option(name = "--properties",
+                usage = "Proxy configuration (defaults to 1% chance of all" +
+                " failures")
         private File propertiesFile;
 
         @Option(name = "--version", usage = "display version")
@@ -64,51 +69,25 @@ public final class Main {
             System.exit(0);
         }
 
-        Properties properties = new Properties();
+        InputStream is = null;
         if (options.propertiesFile == null) {
-            try (InputStream is = Resources
-                    .asByteSource(
-                            Resources.getResource("chaos-http-proxy.conf"))
-                    .openStream()) {
-                properties.load(is);
-            }
-        } else {
-            try (InputStream is = new FileInputStream(options.propertiesFile)) {
-                properties.load(is);
-            }
-        }
-        properties.putAll(System.getProperties());
-
-        final List<Failure> failures = new ArrayList<>();
-        for (String propertyName : properties.stringPropertyNames()) {
-            String prefix = "com.bouncestorage.chaoshttpproxy.";
-            if (!propertyName.startsWith(prefix)) {
-                continue;
-            }
-            String failureName = propertyName.substring(prefix.length());
-            Failure failure;
             try {
-                failure = Failure.valueOf(failureName.toUpperCase());
-            } catch (IllegalArgumentException iae) {
-                System.err.println("Invalid failure: " + failureName);
-                System.err.println("Valid failures:");
-                for (Failure failure2 : Failure.values()) {
-                    System.err.println(failure2.toString().toLowerCase());
-                }
-                System.exit(1);
-                throw iae;
+                is = Resources.asByteSource(Resources.getResource(
+                        "chaos-http-proxy.conf")).openStream();
             }
-            int occurrences = Integer
-                    .parseInt(properties.getProperty(propertyName));
-            for (int i = 0; i < occurrences; ++i) {
-                failures.add(failure);
+            catch(Exception e){}
+        } else {
+            try {
+                is = new FileInputStream(options.propertiesFile);
             }
+            catch(Exception e){}
         }
-
-        URI proxyEndpoint = new URI("http", null, options.address, options.port,
-                null, null, null);
+        ChaosConfig chaosConfig = new DefaultChaosConfig(is);
+        
+        URI proxyEndpoint = new URI("http", null, options.address,
+                options.port, null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,
-                new RandomFailureSupplier(failures));
+                chaosConfig);
         try {
             proxy.start();
         } catch (Exception e) {
@@ -116,6 +95,7 @@ public final class Main {
             System.exit(1);
         }
     }
+
 
     private static void usage(CmdLineParser parser) {
         System.err.println("Usage: s3proxy [options...]");
