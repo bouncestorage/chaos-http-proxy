@@ -20,17 +20,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Random;
 
-import com.google.common.base.Supplier;
 import com.google.common.io.Resources;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
 
 public final class Main {
     private Main() {
@@ -69,56 +65,29 @@ public final class Main {
             System.exit(0);
         }
 
-        Properties properties = new Properties();
+        InputStream is = null;
         if (options.propertiesFile == null) {
-            try (InputStream is = Resources.asByteSource(Resources.getResource(
-                    "chaos-http-proxy.conf")).openStream()) {
-                properties.load(is);
+            try {
+                is = Resources.asByteSource(Resources.getResource(
+                        "chaos-http-proxy.conf")).openStream();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
             }
         } else {
-            try (InputStream is = new FileInputStream(options.propertiesFile)) {
-                properties.load(is);
-            }
-        }
-        properties.putAll(System.getProperties());
-
-        final List<Failure> failures = new ArrayList<>();
-        for (String propertyName : properties.stringPropertyNames()) {
-            String prefix = "com.bouncestorage.chaoshttpproxy.";
-            if (!propertyName.startsWith(prefix)) {
-                continue;
-            }
-            String failureName = propertyName.substring(prefix.length());
-            Failure failure;
             try {
-                failure = Failure.valueOf(failureName.toUpperCase());
-            } catch (IllegalArgumentException iae) {
-                System.err.println("Invalid failure: " + failureName);
-                System.err.println("Valid failures:");
-                for (Failure failure2 : Failure.values()) {
-                    System.err.println(failure2.toString().toLowerCase());
-                }
+                is = new FileInputStream(options.propertiesFile);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
                 System.exit(1);
-                throw iae;
-            }
-            int occurrences = Integer.parseInt(properties.getProperty(
-                    propertyName));
-            for (int i = 0; i < occurrences; ++i) {
-                failures.add(failure);
             }
         }
+        ChaosConfig chaosConfig = new DefaultChaosConfig(is);
 
         URI proxyEndpoint = new URI("http", null, options.address,
                 options.port, null, null, null);
         ChaosHttpProxy proxy = new ChaosHttpProxy(proxyEndpoint,
-                new Supplier<Failure>() {
-                    private final Random random = new Random();
-
-                    @Override
-                    public Failure get() {
-                        return failures.get(random.nextInt(failures.size()));
-                    }
-                });
+                chaosConfig);
         try {
             proxy.start();
         } catch (Exception e) {
@@ -126,6 +95,7 @@ public final class Main {
             System.exit(1);
         }
     }
+
 
     private static void usage(CmdLineParser parser) {
         System.err.println("Usage: s3proxy [options...]");

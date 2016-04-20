@@ -27,15 +27,22 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.HandlerList;
 
 public final class ChaosHttpProxy {
     private final HttpClient client;
     private final Server server;
     private final ChaosHttpProxyHandler handler;
+    private ChaosConfig chaosConfig;
 
     // TODO: authentication
-    public ChaosHttpProxy(URI endpoint, Supplier<Failure> supplier)
+    public ChaosHttpProxy(URI endpoint, ChaosConfig chaosConfig)
             throws Exception {
+        setChaosConfig(chaosConfig);
+
+        Supplier<Failure> supplier = new RandomFailureSupplier(
+                chaosConfig.getFailures());
+
         requireNonNull(endpoint);
 
         client = new HttpClient();
@@ -50,7 +57,18 @@ public final class ChaosHttpProxy {
         connector.setPort(endpoint.getPort());
         server.addConnector(connector);
         this.handler = new ChaosHttpProxyHandler(client, supplier);
-        server.setHandler(handler);
+        HandlerList handlers = new HandlerList();
+        handlers.addHandler(new ChaosApiHandler(this, handler));
+        handlers.addHandler(handler);
+        server.setHandler(handlers);
+    }
+
+    protected ChaosConfig getChaosConfig() {
+        return chaosConfig;
+    }
+
+    void setChaosConfig(ChaosConfig chaosConfig) {
+        this.chaosConfig = chaosConfig;
     }
 
     public void start() throws Exception {
