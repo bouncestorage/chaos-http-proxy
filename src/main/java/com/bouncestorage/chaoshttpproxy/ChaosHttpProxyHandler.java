@@ -168,7 +168,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     headerValue = headerValue.toUpperCase();
                 }
                 if (headerName.equalsIgnoreCase(HttpHeaders.CONTENT_LENGTH)) {
-                    userContentLength = Long.valueOf(headerValue);
+                    userContentLength = Long.parseLong(headerValue);
                 }
                 clientRequest.header(headerName, headerValue);
             }
@@ -176,7 +176,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             // Work around Jetty bug that strips Content-Length
             // https://bugs.eclipse.org/bugs/show_bug.cgi?id=475613.
             final long length = userContentLength;
-            clientRequest.content(new InputStreamContentProvider(is) {
+            clientRequest.content(new InputStreamContentProvider(iss) {
                     @Override
                     public long getLength() {
                         return length != -1 ? length : super.getLength();
