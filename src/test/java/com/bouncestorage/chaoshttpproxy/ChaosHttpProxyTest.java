@@ -20,10 +20,15 @@ import static java.util.Objects.requireNonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -40,6 +45,7 @@ import com.google.common.net.HttpHeaders;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -68,10 +74,14 @@ public final class ChaosHttpProxyTest {
     private HttpBin httpBin;
     private HttpClient client;
 
+    private ChaosConfig chaosConfig;
+
     @Before
     public void setUp() throws Exception {
-        proxy = new ChaosHttpProxy(proxyEndpoint,
-                Suppliers.ofInstance(Failure.SUCCESS));
+        Properties p = new Properties();
+        p.setProperty(Failure.CHAOS_CONFIG_PREFIX + "success", "5");
+        chaosConfig = new ChaosConfig(p);
+        proxy = new ChaosHttpProxy(proxyEndpoint, chaosConfig);
         proxy.start();
 
         // reset endpoint to handle zero port
@@ -274,6 +284,56 @@ public final class ChaosHttpProxyTest {
                 .header(HttpHeader.CONTENT_LENGTH, String.valueOf(65536))
                 .send();
         assertThat(gotContentLength.get()).isTrue();
+    }
+
+    @Test
+    public void testApi() throws InterruptedException, TimeoutException,
+            ExecutionException, IOException {
+        org.eclipse.jetty.client.api.Request request =
+                client.POST(httpBinEndpoint + "/chaos/api");
+        Properties properties = new Properties();
+        properties.setProperty(Failure.CHAOS_CONFIG_PREFIX + "success", "6");
+        properties.setProperty(Failure.CHAOS_CONFIG_PREFIX + "timeout", "3");
+
+        final ByteArrayOutputStream byteArrayOutputStream =
+                new ByteArrayOutputStream();
+        properties.store(byteArrayOutputStream, "test");
+        request.content(new ContentProvider() {
+
+            @Override
+            public Iterator<ByteBuffer> iterator() {
+                ArrayList<ByteBuffer> buffers = new ArrayList<ByteBuffer>();
+                buffers.add(
+                        ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
+                return buffers.iterator();
+            }
+
+            @Override
+            public long getLength() {
+                return byteArrayOutputStream.toByteArray().length;
+            }
+        });
+        validateApiResponse(request.send());
+
+        // do another get to test the pure get piece. we only do this because
+        // we're not supposed to depend upon side effects between tests
+        validateApiResponse(client.GET(httpBinEndpoint + "/chaos/api"));
+
+    }
+
+    private void validateApiResponse(ContentResponse response)
+            throws IOException {
+        Properties responseProperties = new Properties();
+        responseProperties
+                .load(new ByteArrayInputStream(response.getContent()));
+        assertThat(responseProperties.size()).as("size").isEqualTo(2);
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_PREFIX + "success"))
+                        .as("success config").isEqualTo("6");
+        assertThat(responseProperties
+                .getProperty(Failure.CHAOS_CONFIG_PREFIX + "timeout"))
+                        .as("timeout config").isEqualTo("3");
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
     }
 
     /** Supplier whose elements are provided by an Iterable. */
