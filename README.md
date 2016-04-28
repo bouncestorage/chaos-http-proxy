@@ -67,6 +67,15 @@ com.bouncestorage.chaoshttpproxy.success=99
 
 [Sample configuration](https://github.com/bouncestorage/chaos-http-proxy/blob/master/src/main/resources/chaos-http-proxy.conf)
 
+Chaos HTTP Proxy accepts configuration at invocation time via the `--properties`
+flag and at run-time via the `/chaos/api` endpoint:
+
+```
+curl --request POST --upload-file chaos-http-proxy.conf http://localhost:1080/chaos/api
+curl http://localhost:1080/chaos/api
+com.bouncestorage.chaoshttpproxy.success=100
+```
+
 Limitations
 -----------
 * lacks HTTP authentication
