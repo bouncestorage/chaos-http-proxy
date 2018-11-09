@@ -47,6 +47,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
+import org.gaul.httpbin.HttpBin;
+import org.gaul.httpbin.HttpBinHandler;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
