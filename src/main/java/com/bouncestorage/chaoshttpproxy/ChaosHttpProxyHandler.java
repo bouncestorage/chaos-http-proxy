@@ -94,7 +94,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             try {
                 uri = new URI(request.getScheme(),
                         /*userInfo=*/ null,
-                        hostAndPort.getHostText(),
+                        hostAndPort.getHost(),
                         hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
                         request.getRequestURI(),
                         queryString,
@@ -121,7 +121,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 try {
                     redirectUri = new URI(request.getScheme(),
                             /*userInfo=*/ null,
-                            hostAndPort.getHostText(),
+                            hostAndPort.getHost(),
                             hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
                             "/" + UUID.randomUUID().toString(),
                             /*query=*/ null,
