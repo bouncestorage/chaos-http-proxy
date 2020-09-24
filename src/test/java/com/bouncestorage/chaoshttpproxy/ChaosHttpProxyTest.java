@@ -214,8 +214,9 @@ public final class ChaosHttpProxyTest {
     @Test
     public void testHttpGetSlowResponse() throws Exception {
         proxy.setFailureSupplier(Suppliers.ofInstance(Failure.SLOW_RESPONSE));
-        ContentResponse response = client.GET(httpBinEndpoint + "/get");
-        assertThat(response.getContentAsString()).isEqualTo("Hello, world!");
+        ContentResponse response = client.GET(httpBinEndpoint + "/html");
+        assertThat(response.getContentAsString()).contains(
+                "Herman Melville - Moby-Dick");
     }
 
     @Test
