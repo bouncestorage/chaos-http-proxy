@@ -214,9 +214,12 @@ public final class ChaosHttpProxyTest {
     @Test
     public void testHttpGetSlowResponse() throws Exception {
         proxy.setFailureSupplier(Suppliers.ofInstance(Failure.SLOW_RESPONSE));
+        long time = System.currentTimeMillis();
         ContentResponse response = client.GET(httpBinEndpoint + "/html");
+        assertThat(response.getStatus()).as("status").isEqualTo(200);
         assertThat(response.getContentAsString()).contains(
                 "Herman Melville - Moby-Dick");
+        assertThat(System.currentTimeMillis() - time).isGreaterThan(1000);
     }
 
     @Test
