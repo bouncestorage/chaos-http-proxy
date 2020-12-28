@@ -85,6 +85,12 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
         Failure failure = supplier.get();
         logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
+        for (String headerName :
+                Collections.list(request.getHeaderNames())) {
+            String headerValue = request.getHeader(headerName);
+            logger.trace(">>> {}: {}", headerName, headerValue);
+        }
+
         try (InputStream is = request.getInputStream();
              OutputStream os = servletResponse.getOutputStream()) {
             HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
@@ -163,7 +169,6 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     continue;
                 }
                 String headerValue = request.getHeader(headerName);
-                logger.trace("{}: {}", headerName, headerValue);
 
                 if (headerName.equalsIgnoreCase(HttpHeaders.CONTENT_MD5) &&
                         failure == Failure.CORRUPT_REQUEST_CONTENT_MD5) {
@@ -207,7 +212,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             for (HttpField field : headers) {
                 String header = field.getName();
                 String value = field.getValue();
-                logger.trace("header: {}: {}", header, value);
+                logger.trace("<<< header: {}: {}", header, value);
                 switch (failure) {
                 case CHANGE_HEADER_CASE:
                     // TODO: randomly change between upper- and lower-case
