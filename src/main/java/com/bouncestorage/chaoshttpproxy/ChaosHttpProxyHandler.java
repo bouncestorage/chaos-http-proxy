@@ -69,6 +69,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
     }
 
     @Override
+    @SuppressWarnings("deprecation")  // for Hashing.md5
     public void handle(String target, Request baseRequest,
             HttpServletRequest request, HttpServletResponse servletResponse)
             throws IOException {
