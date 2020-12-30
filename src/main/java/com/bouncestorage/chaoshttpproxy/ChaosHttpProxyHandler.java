@@ -96,18 +96,15 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
                     HttpHeaders.HOST));
             String queryString = request.getQueryString();
-            URI uri;
-            try {
-                uri = new URI(request.getScheme(),
-                        /*userInfo=*/ null,
-                        hostAndPort.getHost(),
-                        hostAndPort.hasPort() ? hostAndPort.getPort() : 80,
-                        request.getRequestURI(),
-                        queryString,
-                        /*fragment=*/ null);
-            } catch (URISyntaxException use) {
-                throw new IOException(use);
-            }
+            // Intentionally create URL with String to avoid percent encoding
+            // issues.
+            URI uri = URI.create(
+                    request.getScheme() + "://" +
+                    hostAndPort.getHost() + ":" +
+                    // TODO: does this make sense for HTTPS?
+                    (hostAndPort.hasPort() ? hostAndPort.getPort() : 80) +
+                    request.getRequestURI() +
+                    (queryString != null ? "?" + queryString : ""));
             logger.debug("uri: {}", uri);
             URI redirectedUri = redirects.get(uri);
             if (redirectedUri != null) {
@@ -159,7 +156,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     // TODO: random limit
                     ByteStreams.limit(is, 1024) : is;
             org.eclipse.jetty.client.api.Request clientRequest = client
-                    .newRequest(uri.toString())
+                    .newRequest(uri)
                     .method(request.getMethod());
             long userContentLength = -1;
             for (String headerName :
