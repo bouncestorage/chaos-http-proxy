@@ -233,7 +233,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
-    <jetty.version>9.2.12.v20150709</jetty.version>
+    <jetty.version>9.4.41.v20210516</jetty.version>
   </properties>
 
   <prerequisites>
