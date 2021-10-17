@@ -20,9 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import java.net.URI;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.HttpConnectionFactory;

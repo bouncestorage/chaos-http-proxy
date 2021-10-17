@@ -19,8 +19,7 @@ package com.bouncestorage.chaoshttpproxy;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-
-import com.google.common.base.Supplier;
+import java.util.function.Supplier;
 
 final class RandomFailureSupplier implements Supplier<Failure> {
     private final Random random = new Random();

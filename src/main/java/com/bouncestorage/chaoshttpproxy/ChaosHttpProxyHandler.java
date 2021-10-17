@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +32,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
-import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
@@ -218,7 +218,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                     break;
                 case CORRUPT_RESPONSE_CONTENT_MD5:
                     if (header.equals(HttpHeaders.CONTENT_MD5)) {
-                        value = BaseEncoding.base64().encode(
+                        value = Base64.getEncoder().encodeToString(
                                 new byte[Hashing.md5().bits() / 8]);
                     }
                     break;
