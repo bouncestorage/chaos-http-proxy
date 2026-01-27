@@ -253,7 +253,7 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
                 default:
                     break;
                 }
-                ByteStreams.copy(responseContent, os);
+                responseContent.transferTo(os);
             }
         }
     }
