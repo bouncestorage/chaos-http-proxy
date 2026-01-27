@@ -27,7 +27,7 @@ Users can
 from GitHub.
 One can also build the project by running `mvn package` which produces a
 binary at `target/chaos-http-proxy`.
-Chaos HTTP Proxy requires Java 8 to run.
+Chaos HTTP Proxy requires Java 11 to run.
 
 Examples
 --------
