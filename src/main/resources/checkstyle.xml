@@ -11,7 +11,6 @@
   <module name="NewlineAtEndOfFile"/>
   <module name="Translation"/>
   <module name="TreeWalker">
-    <property name="cacheFile" value="target/cachefile"/>
     <module name="AbstractClassName"/>
     <module name="ArrayTypeStyle"/>
     <module name="AvoidNestedBlocks"/>
@@ -60,7 +59,6 @@
     <module name="InterfaceIsType"/>
     <module name="JavadocStyle"/>
     <module name="LeftCurly"/>
-    <module name="LineLength"/>
     <module name="LocalFinalVariableName"/>
     <module name="LocalVariableName"/>
     <module name="MagicNumber">
@@ -95,9 +93,6 @@
     <module name="ParenPad"/>
     <module name="RedundantImport"/>
     <module name="RedundantModifier"/>
-    <module name="RedundantThrows">
-      <property name="suppressLoadErrors" value="true"/>
-    </module>
     <module name="RightCurly"/>
     <module name="SimplifyBooleanExpression"/>
     <module name="SimplifyBooleanReturn"/>
