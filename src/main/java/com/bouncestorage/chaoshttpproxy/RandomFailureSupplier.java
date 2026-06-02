@@ -35,6 +35,10 @@ final class RandomFailureSupplier implements Supplier<Failure> {
 
     @Override
     public Failure get() {
+        if (failures.isEmpty()) {
+            // No failures configured means inject no chaos.
+            return Failure.SUCCESS;
+        }
         return failures.get(random.nextInt(failures.size()));
     }
 }
