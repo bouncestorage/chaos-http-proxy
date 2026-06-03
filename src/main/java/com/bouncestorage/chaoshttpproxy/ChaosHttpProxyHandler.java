@@ -83,6 +83,22 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
             return;
         }
 
+        // A proxy cannot forward a request without a parseable Host header.
+        String hostHeader = request.getHeader(HttpHeaders.HOST);
+        if (hostHeader == null) {
+            logger.debug("Missing Host header");
+            servletResponse.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        HostAndPort hostAndPort;
+        try {
+            hostAndPort = HostAndPort.fromString(hostHeader);
+        } catch (IllegalArgumentException iae) {
+            logger.debug("Invalid Host header: {}", hostHeader);
+            servletResponse.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
         Failure failure = supplier.get();
         logger.debug("request: {}", request);
         logger.debug("Failure: {}", failure);
@@ -94,8 +110,6 @@ final class ChaosHttpProxyHandler extends AbstractHandler {
 
         try (InputStream is = request.getInputStream();
              OutputStream os = servletResponse.getOutputStream()) {
-            HostAndPort hostAndPort = HostAndPort.fromString(request.getHeader(
-                    HttpHeaders.HOST));
             String queryString = request.getQueryString();
             // Intentionally create URL with String to avoid percent encoding
             // issues.
